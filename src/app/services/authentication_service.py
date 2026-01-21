@@ -45,15 +45,15 @@ class AuthenticationService:
         
         # Store in Redis
         otp_key = f"{otp_prefix}:{user.id}"
-        await self.redis_service.set_value(otp_key, otp_code, expire_seconds=600)
+        await self.redis_service.set_value(otp_key, otp_code, expire_seconds=settings.OTP_EXPIRE_SECONDS)
 
-        # Brute force protection
+        # Rate limit protection
         otp_attemps_key = f"{otp_attemps_prefix}:{user.id}"
-        await self.redis_service.set_value(otp_attemps_key, 0, expire_seconds=600)
+        await self.redis_service.set_value(otp_attemps_key, 0, expire_seconds=settings.OTP_ATTEMPS_EXPIRE_SECONDS)
         # Generate Magic Link
         magic_link_token = jwt_service.create_magic_link_token(user.id)
         # Assuming frontend URL or API URL. For now using API URL.
-        magic_link_url = f"http://localhost:8000/api/v1/login/verify-magic-link?token={magic_link_token}"
+        magic_link_url = f"{settings.DOMAIN}/api/v1/login/verify-magic-link?token={magic_link_token}"
 
         # Mock Email Dispatch
         print(f"==================================================")
@@ -116,7 +116,7 @@ class AuthenticationService:
         # Check for resend cooldown
         otp_resend_cooldown_key = f"{otp_resend_cooldown_prefix}:{user.id}"
         if await self.redis_service.get_value(otp_resend_cooldown_key):
-             raise HTTPException(status_code=400, detail="Please wait 60 seconds before resending OTP")
+             raise HTTPException(status_code=400, detail=f"Please wait {settings.OTP_RESEND_COOLDOWN_SECONDS} seconds before resending OTP")
 
         # Check for resend attemps
         otp_attemps_key = f"{otp_attemps_prefix}:{user.id}"
@@ -127,15 +127,15 @@ class AuthenticationService:
              raise HTTPException(status_code=400, detail="Too many resend attemps")
         
         # Set cooldown
-        await self.redis_service.set_value(otp_resend_cooldown_key, 1, expire_seconds=60)
+        await self.redis_service.set_value(otp_resend_cooldown_key, 1, expire_seconds=settings.OTP_RESEND_COOLDOWN_SECONDS)
         
         #Generate new OTP
-        await self.redis_service.set_value(otp_attemps_key, current_attemps + 1, expire_seconds=600)
+        await self.redis_service.set_value(otp_attemps_key, current_attemps + 1, expire_seconds=settings.OTP_ATTEMPS_EXPIRE_SECONDS)
         otp_key = f"{otp_prefix}:{user.id}"
         await self.redis_service.delete_value(otp_key)
         
         otp_code = "".join(random.choices(string.digits, k=6))
-        await self.redis_service.set_value(otp_key, otp_code, expire_seconds=600)
+        await self.redis_service.set_value(otp_key, otp_code, expire_seconds=settings.OTP_EXPIRE_SECONDS)
         
         print(f"==================================================")
         print(f"Sending Email to {user.email}")
