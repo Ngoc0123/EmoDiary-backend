@@ -28,8 +28,6 @@ def create_access_token(
 
 
 def create_magic_link_token(subject: Union[str, Any]) -> str:
-    # 10 minute expiration for magic links? "Activation" purpose.
-    # User guide says "create Magic Link... embedded... activation scope"
     expire = datetime.utcnow() + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES)
     to_encode = {"exp": expire, "sub": str(subject), "scope": "activation"}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

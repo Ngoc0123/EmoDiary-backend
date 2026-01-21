@@ -145,7 +145,6 @@ class AuthenticationService:
         
         return {"message": "OTP resent successfully"}
 
-
     async def verify_magic_link(self, token: str) -> Any:
         try:
             payload = jwt.decode(
@@ -165,8 +164,6 @@ class AuthenticationService:
         await self.user_repository.save(user)
         
         return {"message": "Account verified successfully"}
-
-
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
